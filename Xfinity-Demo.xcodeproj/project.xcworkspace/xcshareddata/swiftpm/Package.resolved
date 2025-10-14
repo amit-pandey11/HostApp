@@ -1,0 +1,15 @@
+{
+  "originHash" : "0d7e239b47045b0e4b3ab7c92fad8b042ed81c26fa7c3d82a5d0da315d9d22c0",
+  "pins" : [
+    {
+      "identity" : "servicesspm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/amit-pandey11/ServicesSPM.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "c401988d62d52521490d0dcb9731d0d2d25d5159"
+      }
+    }
+  ],
+  "version" : 3
+}

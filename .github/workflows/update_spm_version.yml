@@ -1,0 +1,56 @@
+name: Update SPM Version and Create PR
+
+on:
+  repository_dispatch:
+    types: [spm_version_updated]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout host app repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show received payload
+        run: |
+          echo "New SPM version received: ${{ github.event.client_payload.new_tag }}"
+
+      - name: Update SPM version in Package.swift
+        run: |
+          NEW_TAG="${{ github.event.client_payload.new_tag }}"
+          echo "🔧 Updating SPM version to $NEW_TAG"
+
+          # Update version in Package.swift (assuming your dependency line looks like this:)
+          # .package(url: "https://github.com/your-org/your-spm.git", from: "v0.0.3"),
+          sed -i "s/from: \".*\"/from: \"${NEW_TAG}\"/" Package.swift
+
+          echo "✅ Package.swift updated successfully!"
+
+      - name: Commit and push changes
+        run: |
+          NEW_TAG="${{ github.event.client_payload.new_tag }}"
+          branch_name="update-spm-${NEW_TAG}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$branch_name"
+          git add Package.swift
+          git commit -m "chore: update SPM dependency to ${NEW_TAG}"
+          git push origin "$branch_name"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "Update SPM dependency to ${{ github.event.client_payload.new_tag }}"
+          body: "This PR updates the SPM dependency to version **${{ github.event.client_payload.new_tag }}**."
+          branch: "update-spm-${{ github.event.client_payload.new_tag }}"
+          base: "main"
