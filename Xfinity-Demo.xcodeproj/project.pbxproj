@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		841152BF2E940071006EBCF3 /* ServicesSPM in Frameworks */ = {isa = PBXBuildFile; productRef = 841152BE2E940071006EBCF3 /* ServicesSPM */; };
+		846183332EC202E9005E0569 /* ServicesSPM in Frameworks */ = {isa = PBXBuildFile; productRef = 846183322EC202E9005E0569 /* ServicesSPM */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,7 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				841152BF2E940071006EBCF3 /* ServicesSPM in Frameworks */,
+				846183332EC202E9005E0569 /* ServicesSPM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -117,7 +117,7 @@
 			);
 			name = "Xfinity-Demo";
 			packageProductDependencies = (
-				841152BE2E940071006EBCF3 /* ServicesSPM */,
+				846183322EC202E9005E0569 /* ServicesSPM */,
 			);
 			productName = "Xfinity-Demo";
 			productReference = 841152912E93F664006EBCF3 /* Xfinity-Demo.app */;
@@ -202,7 +202,7 @@
 			mainGroup = 841152882E93F664006EBCF3;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				841152BD2E940071006EBCF3 /* XCRemoteSwiftPackageReference "ServicesSPM" */,
+				846183312EC202E9005E0569 /* XCRemoteSwiftPackageReference "ServicesSPM" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 841152922E93F664006EBCF3 /* Products */;
@@ -581,20 +581,20 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		841152BD2E940071006EBCF3 /* XCRemoteSwiftPackageReference "ServicesSPM" */ = {
+		846183312EC202E9005E0569 /* XCRemoteSwiftPackageReference "ServicesSPM" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/amit-pandey11/ServicesSPM.git";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.16;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		841152BE2E940071006EBCF3 /* ServicesSPM */ = {
+		846183322EC202E9005E0569 /* ServicesSPM */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 841152BD2E940071006EBCF3 /* XCRemoteSwiftPackageReference "ServicesSPM" */;
+			package = 846183312EC202E9005E0569 /* XCRemoteSwiftPackageReference "ServicesSPM" */;
 			productName = ServicesSPM;
 		};
 /* End XCSwiftPackageProductDependency section */
