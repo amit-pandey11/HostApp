@@ -1,15 +1,15 @@
 {
-  "originHash" : "0d7e239b47045b0e4b3ab7c92fad8b042ed81c26fa7c3d82a5d0da315d9d22c0",
-  "pins" : [
+  "originHash": "0d7e239b47045b0e4b3ab7c92fad8b042ed81c26fa7c3d82a5d0da315d9d22c0",
+  "pins": [
     {
-      "identity" : "servicesspm",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/amit-pandey11/ServicesSPM.git",
-      "state" : {
-        "revision" : "7b8fe010cbc5df8a5fbd3043de40283076b6dec6",
-        "version" : "0.0.28"
+      "identity": "servicesspm",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/amit-pandey11/ServicesSPM.git",
+      "state": {
+        "revision": "80bdb6dab06e9af010df161a1252ff8c8ae7a5b6",
+        "version": "0.0.29"
       }
     }
   ],
-  "version" : 3
+  "version": 3
 }
