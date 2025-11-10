@@ -133,35 +133,35 @@ jobs:
           RESOLVED_FILE="${{ steps.prepare.outputs.resolved_file }}"
           REPO_URL="${{ steps.prepare.outputs.repo_url }}"
           python3 - <<PY
-import json,sys
-f='${RESOLVED_FILE}'
-url='${REPO_URL}'
-j=json.load(open(f))
-for p in j.get('pins',[]):
-    loc=p.get('location') or p.get('repositoryURL') or p.get('url')
-    if loc==url or loc==url+'.git' or loc==url+'/':
-        state=p.get('state',{})
-        ver=state.get('version') or state.get('revision') or ''
-        print(ver)
-        sys.exit(0)
-print("")
-sys.exit(0)
-PY
-          echo "current_version=$(python3 - <<PY
-import json,sys
-f='${RESOLVED_FILE}'
-url='${REPO_URL}'
-j=json.load(open(f))
-for p in j.get('pins',[]):
-    loc=p.get('location') or p.get('repositoryURL') or p.get('url')
-    if loc==url or loc==url+'.git' or loc==url+'/':
-        state=p.get('state',{})
-        ver=state.get('version') or state.get('revision') or ''
-        print(ver)
-        sys.exit(0)
-print("")
-PY
-)" >> "$GITHUB_OUTPUT"
+          import json,sys
+          f='${RESOLVED_FILE}'
+          url='${REPO_URL}'
+          j=json.load(open(f))
+          for p in j.get('pins',[]):
+              loc=p.get('location') or p.get('repositoryURL') or p.get('url')
+              if loc==url or loc==url+'.git' or loc==url+'/':
+                  state=p.get('state',{})
+                  ver=state.get('version') or state.get('revision') or ''
+                  print(ver)
+                  sys.exit(0)
+          print("")
+          sys.exit(0)
+          PY
+                    echo "current_version=$(python3 - <<PY
+          import json,sys
+          f='${RESOLVED_FILE}'
+          url='${REPO_URL}'
+          j=json.load(open(f))
+          for p in j.get('pins',[]):
+              loc=p.get('location') or p.get('repositoryURL') or p.get('url')
+              if loc==url or loc==url+'.git' or loc==url+'/':
+                  state=p.get('state',{})
+                  ver=state.get('version') or state.get('revision') or ''
+                  print(ver)
+                  sys.exit(0)
+          print("")
+          PY
+          )" >> "$GITHUB_OUTPUT"
 
       - name: Compute candidate tag to use
         id: pick
@@ -245,27 +245,27 @@ PY
           NEW_SHA="${{ steps.rev.outputs.new_sha }}"
 
           python3 - <<PY
-import json,sys
-f='${RESOLVED_FILE}'
-url='${REPO_URL}'
-tag='${CLEAN_TAG}'
-sha='${NEW_SHA}'
-j=json.load(open(f))
-found=False
-for p in j.get('pins',[]):
-    loc=p.get('location') or p.get('repositoryURL') or p.get('url')
-    if loc==url or loc==url+'.git' or loc==url+'/':
-        st=p.setdefault('state',{})
-        st['version']=tag
-        st['revision']=sha
-        found=True
-        break
-if not found:
-    print("Package entry for",url,"not found in",f)
-    sys.exit(1)
-json.dump(j, open(f,'w'), indent=2, sort_keys=False)
-print("Updated",f)
-PY
+          import json,sys
+          f='${RESOLVED_FILE}'
+          url='${REPO_URL}'
+          tag='${CLEAN_TAG}'
+          sha='${NEW_SHA}'
+          j=json.load(open(f))
+          found=False
+          for p in j.get('pins',[]):
+              loc=p.get('location') or p.get('repositoryURL') or p.get('url')
+              if loc==url or loc==url+'.git' or loc==url+'/':
+                  st=p.setdefault('state',{})
+                  st['version']=tag
+                  st['revision']=sha
+                  found=True
+                  break
+          if not found:
+              print("Package entry for",url,"not found in",f)
+              sys.exit(1)
+          json.dump(j, open(f,'w'), indent=2, sort_keys=False)
+          print("Updated",f)
+          PY
           echo "Updated resolved: $RESOLVED_FILE"
           git status --porcelain
           git --no-pager diff -- "$RESOLVED_FILE" | sed -n '1,200p' || true
