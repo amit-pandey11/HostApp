@@ -1,0 +1,286 @@
+name: Manual SPM version bump (host)
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_alias:
+        description: 'Select package to bump'
+        required: true
+        type: choice
+        options:
+          - ServicesSPM
+      version:
+        description: 'Optional: version to bump to (e.g. v0.0.27). Leave empty to auto-pick the latest > current.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    env:
+      # mapping of friendly alias -> repository URL (use the exact URL format that appears in Package.resolved)
+      # Add more mappings here if you have more packages
+      SERVICESPM_URL: "https://github.com/amit-pandey11/ServicesSPM"
+      RESOLVED_PATH_HINT: "./Xfinity-Demo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+      PAT_SECRET_NAME: "PRIVATE_REPO_PAT"   # put your PAT in repo secrets with this name (if repo is private)
+    steps:
+      - name: Checkout host repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare inputs & resolved path
+        id: prepare
+        run: |
+          ALIAS="${{ github.event.inputs.package_alias }}"
+          INPUT_VER="${{ github.event.inputs.version }}"
+          echo "alias=$ALIAS" >> "$GITHUB_OUTPUT"
+          echo "input_version=$INPUT_VER" >> "$GITHUB_OUTPUT"
+
+          # choose repo url from alias mapping
+          case "$ALIAS" in
+            "ServicesSPM")
+              REPO_URL="${SERVICESPM_URL}"
+              ;;
+            *)
+              echo "Unknown package alias: $ALIAS" >&2
+              exit 1
+              ;;
+          esac
+          # path to resolved file (auto-detect if necessary)
+          if [ -f "${RESOLVED_PATH_HINT}" ]; then
+            RESOLVED_FILE="${RESOLVED_PATH_HINT}"
+          else
+            RESOLVED_FILE=$(find . -name "Package.resolved" | head -1 || true)
+          fi
+          if [ -z "$RESOLVED_FILE" ]; then
+            echo "No Package.resolved found" >&2
+            exit 1
+          fi
+
+          echo "repo_url=$REPO_URL" >> "$GITHUB_OUTPUT"
+          echo "resolved_file=$RESOLVED_FILE" >> "$GITHUB_OUTPUT"
+          echo "Using PAT secret name: $PAT_SECRET_NAME" >&2
+
+      - name: Show current Package.resolved block for package
+        run: |
+          RESOLVED_FILE="${{ steps.prepare.outputs.resolved_file }}"
+          REPO_URL="${{ steps.prepare.outputs.repo_url }}"
+          echo "Resolved file: $RESOLVED_FILE"
+          echo "Looking for repositoryURL: $REPO_URL"
+          # Print the pins array entry to logs for debugging
+          python3 - <<PY
+import json,sys
+f='${RESOLVED_FILE}'
+url='${REPO_URL}'
+j=json.load(open(f))
+pins=j.get('pins',[])
+for p in pins:
+    if p.get('location')==url or p.get('location')==url+'.git' or p.get('location')==url+'/':
+        print(json.dumps(p, indent=2))
+        sys.exit(0)
+print("No pin found matching", url)
+sys.exit(1)
+PY
+
+      - name: Fetch tags from package repo
+        id: fetch_tags
+        run: |
+          REPO_URL="${{ steps.prepare.outputs.repo_url }}"
+          # try unauthenticated first (works for public repo)
+          echo "Attempting unauthenticated git ls-remote for tags..."
+          TAG_LINES=$(git ls-remote --tags --refs "$REPO_URL" 2>/dev/null || true)
+
+          if [ -z "$TAG_LINES" ]; then
+            echo "Unauthenticated fetch returned empty — trying with PAT (if configured)..."
+            # read PAT from secrets (optional). Provide secret name in env variable.
+            PAT_NAME="${{ env.PAT_SECRET_NAME }}"
+            # If user has set the secret, use it
+            PAT_VAL="${{ secrets.PRIVATE_REPO_PAT }}"
+            if [ -z "$PAT_VAL" ]; then
+              echo "No PAT found in secrets.${PAT_NAME}; cannot fetch tags from private repo" >&2
+              exit 1
+            fi
+            # Build auth URL
+            AUTH_URL="$(echo "$REPO_URL" | sed -e 's|https://|https://x-access-token:'"$PAT_VAL"'@|')"
+            TAG_LINES=$(git ls-remote --tags --refs "$AUTH_URL" 2>/dev/null || true)
+          fi
+
+          if [ -z "$TAG_LINES" ]; then
+            echo "No tags found or unable to fetch tags from $REPO_URL" >&2
+            exit 1
+          fi
+
+          # extract tag names, strip ^{} and sort -V
+          echo "$TAG_LINES" | awk '{print $2}' \
+            | sed 's#refs/tags/##' \
+            | sed 's/\^{}$//' \
+            | sort -V \
+            > .all_tags.txt
+
+          echo "found_tags=$(cat .all_tags.txt | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+          echo "tags_file=.all_tags.txt" >> "$GITHUB_OUTPUT"
+          echo "Fetched tags:" >&2
+          cat .all_tags.txt
+
+      - name: Determine current version used in host (Package.resolved)
+        id: current_ver
+        run: |
+          RESOLVED_FILE="${{ steps.prepare.outputs.resolved_file }}"
+          REPO_URL="${{ steps.prepare.outputs.repo_url }}"
+          python3 - <<PY
+import json,sys
+f='${RESOLVED_FILE}'
+url='${REPO_URL}'
+j=json.load(open(f))
+for p in j.get('pins',[]):
+    loc=p.get('location') or p.get('repositoryURL') or p.get('url')
+    if loc==url or loc==url+'.git' or loc==url+'/':
+        state=p.get('state',{})
+        ver=state.get('version') or state.get('revision') or ''
+        print(ver)
+        sys.exit(0)
+print("")
+sys.exit(0)
+PY
+          echo "current_version=$(python3 - <<PY
+import json,sys
+f='${RESOLVED_FILE}'
+url='${REPO_URL}'
+j=json.load(open(f))
+for p in j.get('pins',[]):
+    loc=p.get('location') or p.get('repositoryURL') or p.get('url')
+    if loc==url or loc==url+'.git' or loc==url+'/':
+        state=p.get('state',{})
+        ver=state.get('version') or state.get('revision') or ''
+        print(ver)
+        sys.exit(0)
+print("")
+PY
+)" >> "$GITHUB_OUTPUT"
+
+      - name: Compute candidate tag to use
+        id: pick
+        run: |
+          INPUT_VER="${{ steps.prepare.outputs.input_version }}"
+          ALL_TAGS="./${{ steps.fetch_tags.outputs.tags_file }}"
+          CUR="${{ steps.current_ver.outputs.current_version }}"
+
+          echo "Input version provided: '$INPUT_VER'"
+          echo "Current version in Package.resolved: '$CUR'"
+          echo "All tags file: $ALL_TAGS"
+          if [ -n "$INPUT_VER" ]; then
+            # use provided version (accept as-is)
+            CHOSEN="$INPUT_VER"
+          else
+            # pick tags that are semver-like and greater than current version (lexicographically via sort -V)
+            # If current version has leading 'v', remove it in comparison
+            CUR_CLEAN=$(echo "$CUR" | sed 's/^v//')
+            # filter tags >= with sort -V
+            CANDIDATES=$(awk '{print}' "$ALL_TAGS" | sed 's/^v//' | awk -v cur="$CUR_CLEAN" 'BEGIN{OFS=ORS=""} {print $0"\n"}' | sort -V | uniq)
+            # now pick the last tag greater than current
+            # we will iterate lines to find tags greater than current
+            CHOSEN=""
+            while read -r t; do
+              # skip empty
+              if [ -z "$t" ]; then continue; fi
+              # compare using sort -V: make a small helper
+              cmp=$(printf "%s\n%s\n" "$CUR_CLEAN" "$t" | sort -V | tail -n1)
+              if [ "$cmp" = "$t" ] && [ "$t" != "$CUR_CLEAN" ]; then
+                CHOSEN="$t"
+              fi
+            done <<< "$(cat $ALL_TAGS | sed 's/^v//')"
+
+            if [ -z "$CHOSEN" ]; then
+              echo "No newer tag found above current ($CUR). Exiting."
+              exit 1
+            fi
+            # restore possible v prefix if tags originally had v prefix
+            # find matching original tag in all_tags
+            ORIG=$(grep -x -m1 -E "^v?$CHOSEN\$" "$ALL_TAGS" | head -n1)
+            if [ -n "$ORIG" ]; then
+              CHOSEN="$ORIG"
+            fi
+          fi
+
+          echo "chosen_tag=$CHOSEN" >> "$GITHUB_OUTPUT"
+          echo "Chosen tag: $CHOSEN" >&2
+
+      - name: Resolve tag -> commit SHA
+        id: rev
+        run: |
+          REPO_URL="${{ steps.prepare.outputs.repo_url }}"
+          TAG="${{ steps.pick.outputs.chosen_tag }}"
+          if [ -z "$TAG" ]; then
+            echo "No tag selected" >&2
+            exit 1
+          fi
+          # try unauthenticated, then with PAT
+          SHA=$(git ls-remote --tags --refs "$REPO_URL" "refs/tags/$TAG" 2>/dev/null | cut -f1 || true)
+          if [ -z "$SHA" ]; then
+            PAT="${{ secrets.PRIVATE_REPO_PAT || '' }}"
+            if [ -n "$PAT" ]; then
+              AUTH_URL="$(echo "$REPO_URL" | sed -e 's|https://|https://x-access-token:'"$PAT"'@|')"
+              SHA=$(git ls-remote --tags --refs "$AUTH_URL" "refs/tags/$TAG" 2>/dev/null | cut -f1 || true)
+            fi
+          fi
+          if [ -z "$SHA" ]; then
+            echo "Cannot lookup SHA for tag $TAG" >&2
+            exit 1
+          fi
+          echo "new_sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "sha: $SHA" >&2
+
+      - name: Update Package.resolved (version + revision) using Python
+        id: update_resolved
+        run: |
+          RESOLVED_FILE="${{ steps.prepare.outputs.resolved_file }}"
+          REPO_URL="${{ steps.prepare.outputs.repo_url }}"
+          TAG="${{ steps.pick.outputs.chosen_tag }}"
+          CLEAN_TAG="${TAG#v}"
+          NEW_SHA="${{ steps.rev.outputs.new_sha }}"
+
+          python3 - <<PY
+import json,sys
+f='${RESOLVED_FILE}'
+url='${REPO_URL}'
+tag='${CLEAN_TAG}'
+sha='${NEW_SHA}'
+j=json.load(open(f))
+found=False
+for p in j.get('pins',[]):
+    loc=p.get('location') or p.get('repositoryURL') or p.get('url')
+    if loc==url or loc==url+'.git' or loc==url+'/':
+        st=p.setdefault('state',{})
+        st['version']=tag
+        st['revision']=sha
+        found=True
+        break
+if not found:
+    print("Package entry for",url,"not found in",f)
+    sys.exit(1)
+json.dump(j, open(f,'w'), indent=2, sort_keys=False)
+print("Updated",f)
+PY
+          echo "Updated resolved: $RESOLVED_FILE"
+          git status --porcelain
+          git --no-pager diff -- "$RESOLVED_FILE" | sed -n '1,200p' || true
+
+      - name: Create PR (commit & open PR)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(spm): bump ${{ steps.prepare.outputs.repo_url }} to ${{ steps.pick.outputs.chosen_tag }}"
+          title: "chore(spm): bump ${{ steps.prepare.outputs.repo_url }} to ${{ steps.pick.outputs.chosen_tag }}"
+          body: "Automated bump of ${{ steps.prepare.outputs.repo_url }} to version **${{ steps.pick.outputs.chosen_tag }}**."
+          branch: "update-spm-${{ steps.pick.outputs.chosen_tag }}"
+          base: "main"
+          delete-branch: false
+
+      - name: Success message
+        run: |
+          echo "PR created (or updated). Tag chosen: ${{ steps.pick.outputs.chosen_tag }} SHA: ${{ steps.rev.outputs.new_sha }}"
