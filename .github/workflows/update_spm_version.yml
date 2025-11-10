@@ -22,6 +22,13 @@ jobs:
         run: |
           echo "New SPM version received: ${{ github.event.client_payload.new_tag }}"
 
+
+      - name: print resolved file
+        run: |
+          RESOLVED_FILE=$(find . -name "Package.resolved" | head -1)
+          echo "Resolved file path: $RESOLVED_FILE"
+          cat "$RESOLVED_FILE"
+
       - name: Update SPM version in Package.swift
         run: |
           NEW_TAG="${{ github.event.client_payload.new_tag }}"
