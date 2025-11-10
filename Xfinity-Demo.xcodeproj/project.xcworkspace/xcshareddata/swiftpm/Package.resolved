@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/amit-pandey11/ServicesSPM.git",
       "state" : {
-        "revision" : "01ed77bdaef9b16472e153d0e216f9087a0b32d4",
-        "version" : "0.0.16"
+        "revision" : "7b8fe010cbc5df8a5fbd3043de40283076b6dec6",
+        "version" : "0.0.28"
       }
     }
   ],
