@@ -74,15 +74,3 @@ jobs:
           git add "$RESOLVED_FILE"
           git commit -m "chore: update SPM dependency to ${NEW_TAG}"
           git push origin "$branch_name"
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "Update SPM dependency to ${{ github.event.client_payload.new_tag }}"
-          body: "This PR updates the SPM dependency to version **${{ github.event.client_payload.new_tag }}**."
-          branch: "update-spm-${{ github.event.client_payload.new_tag }}"
-          base: "main"
-          commit-message: "chore: update SPM dependency to ${{ github.event.client_payload.new_tag }}"
-          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-          delete-branch: false
