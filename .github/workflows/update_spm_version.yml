@@ -32,16 +32,25 @@ jobs:
       - name: Update SPM version in Package.swift
         run: |
           NEW_TAG="${{ github.event.client_payload.new_tag }}"
-          echo "🔧 Updating SPM version to $NEW_TAG"
-
+          CLEAN_TAG="${NEW_TAG#v}"
+          echo "🔧 Updating SPM version to $CLEAN_TAG"
+      
           RESOLVED_FILE=$(find . -name "Package.resolved" | head -1)
           echo "Updating resolved file: $RESOLVED_FILE"
-
-          # Update version in Package.resolved (assuming your dependency line looks like this:)
-          # .package(url: "https://github.com/your-org/your-spm.git", from: "v0.0.3"),
-          sed -i '' "s/\"version\": \".*\"/\"version\": \"${NEW_TAG#v}\"/" "$RESOLVED_FILE"
-
-          echo "✅ Package.swift updated successfully!"
+      
+          # Fetch the commit hash (revision) based on the pushed tag
+          REPO_URL="https://github.com/amit-pandey11/ServicesSPM.git"
+          NEW_REVISION=$(git ls-remote "$REPO_URL" "refs/tags/$NEW_TAG" | cut -f1)
+      
+          echo "New revision hash: $NEW_REVISION"
+      
+          # Update version (handles spaces around :)
+          sed -i '' "s/\"version\"[ ]*:[ ]*\"[^\"]*\"/\"version\" : \"$CLEAN_TAG\"/" "$RESOLVED_FILE"
+      
+          # Update revision (handles spaces)
+          sed -i '' "s/\"revision\"[ ]*:[ ]*\"[^\"]*\"/\"revision\" : \"$NEW_REVISION\"/" "$RESOLVED_FILE"
+      
+          echo "✅ Package.resolved updated successfully!"
 
       - name: Commit and push changes
         run: |
