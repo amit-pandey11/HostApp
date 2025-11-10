@@ -27,9 +27,12 @@ jobs:
           NEW_TAG="${{ github.event.client_payload.new_tag }}"
           echo "🔧 Updating SPM version to $NEW_TAG"
 
-          # Update version in Package.swift (assuming your dependency line looks like this:)
+          RESOLVED_FILE=$(find . -name "Package.resolved" | head -1)
+          echo "Updating resolved file: $RESOLVED_FILE"
+
+          # Update version in Package.resolved (assuming your dependency line looks like this:)
           # .package(url: "https://github.com/your-org/your-spm.git", from: "v0.0.3"),
-          sed -i "s/from: \".*\"/from: \"${NEW_TAG}\"/" Package.swift
+          sed -i '' "s/\"version\": \".*\"/\"version\": \"${NEW_TAG#v}\"/" "$RESOLVED_FILE"
 
           echo "✅ Package.swift updated successfully!"
 
