@@ -74,18 +74,18 @@ jobs:
           echo "Looking for repositoryURL: $REPO_URL"
           # Print the pins array entry to logs for debugging
           python3 - <<PY
-import json,sys
-f='${RESOLVED_FILE}'
-url='${REPO_URL}'
-j=json.load(open(f))
-pins=j.get('pins',[])
-for p in pins:
-    if p.get('location')==url or p.get('location')==url+'.git' or p.get('location')==url+'/':
-        print(json.dumps(p, indent=2))
-        sys.exit(0)
-print("No pin found matching", url)
-sys.exit(1)
-PY
+          import json, sys
+          f='${RESOLVED_FILE}'
+          url='${REPO_URL}'
+          j=json.load(open(f))
+          pins=j.get('pins',[])
+          for p in pins:
+              if p.get('location')==url or p.get('location')==url+'.git' or p.get('location')==url+'/':
+                  print(json.dumps(p, indent=2))
+                  sys.exit(0)
+          print("No pin found matching", url)
+          sys.exit(1)
+          PY
 
       - name: Fetch tags from package repo
         id: fetch_tags
