@@ -83,3 +83,5 @@ jobs:
           body: "This PR updates the SPM dependency to version **${{ github.event.client_payload.new_tag }}**."
           branch: "update-spm-${{ github.event.client_payload.new_tag }}"
           base: "main"
+          commit-message: "chore: update SPM dependency to ${{ github.event.client_payload.new_tag }}"
+          push-to-fork: false
