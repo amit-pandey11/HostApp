@@ -43,12 +43,21 @@ jobs:
           NEW_REVISION=$(git ls-remote "$REPO_URL" "refs/tags/$NEW_TAG" | cut -f1)
       
           echo "New revision hash: $NEW_REVISION"
+
+          # cross platform sed
+          if [[ "$OSTYPE" == "darwin"* ]]; then
+            SED_CMD="sed -i ''"
+          else
+            SED_CMD="sed -i"
+          fi
       
-          # Update version (handles spaces around :)
-          sed -i '' "s/\"version\"[ ]*:[ ]*\"[^\"]*\"/\"version\" : \"$CLEAN_TAG\"/" "$RESOLVED_FILE"
+          # Update version
+          $SED_CMD "s/\"version\"[ ]*:[ ]*\"[^\"]*\"/\"version\" : \"$CLEAN_TAG\"/" "$RESOLVED_FILE"
       
-          # Update revision (handles spaces)
-          sed -i '' "s/\"revision\"[ ]*:[ ]*\"[^\"]*\"/\"revision\" : \"$NEW_REVISION\"/" "$RESOLVED_FILE"
+          # Update revision
+          $SED_CMD "s/\"revision\"[ ]*:[ ]*\"[^\"]*\"/\"revision\" : \"$NEW_REVISION\"/" "$RESOLVED_FILE"
+      
+          cat "$RESOLVED_FILE"
       
           echo "✅ Package.resolved updated successfully!"
 
