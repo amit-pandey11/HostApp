@@ -61,20 +61,6 @@ jobs:
       
           echo "✅ Package.resolved updated successfully!"
 
-      - name: Commit and push changes
-        run: |
-          NEW_TAG="${{ github.event.client_payload.new_tag }}"
-          branch_name="update-spm-${NEW_TAG}"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git checkout -b "$branch_name"
-          RESOLVED_FILE=$(find . -name "Package.resolved" | head -1)
-          git add "$RESOLVED_FILE"
-          git commit -m "chore: update SPM dependency to ${NEW_TAG}"
-          git push origin "$branch_name"
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
