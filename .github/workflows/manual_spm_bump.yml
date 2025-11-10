@@ -26,7 +26,7 @@ jobs:
       # Add more mappings here if you have more packages
       SERVICESPM_URL: "https://github.com/amit-pandey11/ServicesSPM"
       RESOLVED_PATH_HINT: "./Xfinity-Demo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
-      PAT_SECRET_NAME: "PRIVATE_REPO_PAT"   # put your PAT in repo secrets with this name (if repo is private)
+      PAT_SECRET_NAME: "HOST_APP_TOKEN"   # put your PAT in repo secrets with this name (if repo is private)
     steps:
       - name: Checkout host repo
         uses: actions/checkout@v4
