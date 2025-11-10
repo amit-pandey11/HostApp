@@ -70,7 +70,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git checkout -b "$branch_name"
-          git add Package.swift
+          RESOLVED_FILE=$(find . -name "Package.resolved" | head -1)
+          git add "$RESOLVED_FILE"
           git commit -m "chore: update SPM dependency to ${NEW_TAG}"
           git push origin "$branch_name"
 
