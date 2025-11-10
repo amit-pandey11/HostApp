@@ -69,6 +69,5 @@ jobs:
           title: "Update SPM dependency to ${{ github.event.client_payload.new_tag }}"
           body: "This PR updates the SPM dependency to version **${{ github.event.client_payload.new_tag }}**."
           branch: "update-spm-${{ github.event.client_payload.new_tag }}"
-          branch-is-fork: false
           base: "main"
           delete-branch: false
